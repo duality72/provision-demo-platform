@@ -1,0 +1,110 @@
+name: Onboard Connector
+
+on:
+  workflow_dispatch:
+    inputs:
+      connector_name:
+        description: 'Name of the connector'
+        required: true
+        type: string
+      connector_type:
+        description: 'Type of connector (s3, postgres, rest-api, sftp)'
+        required: true
+        type: string
+      encrypted_payload:
+        description: 'Base64-encoded age-encrypted JSON payload'
+        required: true
+        type: string
+      requested_by:
+        description: 'Email of the requesting user'
+        required: true
+        type: string
+
+permissions:
+  id-token: write
+  contents: write
+  pull-requests: write
+
+jobs:
+  onboard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install age
+        run: |
+          sudo apt-get update && sudo apt-get install -y age
+
+      - name: Install SOPS
+        run: |
+          SOPS_VERSION=3.8.1
+          curl -LO "https://github.com/getsops/sops/releases/download/v${SOPS_VERSION}/sops-v${SOPS_VERSION}.linux.amd64"
+          chmod +x "sops-v${SOPS_VERSION}.linux.amd64"
+          sudo mv "sops-v${SOPS_VERSION}.linux.amd64" /usr/local/bin/sops
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Decrypt payload
+        run: |
+          echo "${{ inputs.encrypted_payload }}" | base64 -d > encrypted_payload.age
+          echo "${{ secrets.AGE_SECRET_KEY }}" | age -d -i - encrypted_payload.age > payload.json
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Generate connector files
+        env:
+          SOPS_KMS_ARN: ${{ secrets.SOPS_KMS_ARN }}
+        run: |
+          python .github/scripts/generate_connector.py \
+            --connector-type "${{ inputs.connector_type }}" \
+            --connector-name "${{ inputs.connector_name }}" \
+            --payload-file payload.json
+
+      - name: Clean up sensitive files
+        if: always()
+        run: |
+          rm -f payload.json encrypted_payload.age
+
+      - name: Create branch and commit
+        run: |
+          git config user.name "provision-bot"
+          git config user.email "provision-bot@users.noreply.github.com"
+          BRANCH="feat/onboard-${{ inputs.connector_name }}"
+          git checkout -b "$BRANCH"
+          git add "connectors/${{ inputs.connector_name }}/"
+          git commit -m "Add connector: ${{ inputs.connector_name }} (${{ inputs.connector_type }})
+
+          Requested by: ${{ inputs.requested_by }}"
+          git push origin "$BRANCH"
+
+      - name: Create Pull Request
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BRANCH="feat/onboard-${{ inputs.connector_name }}"
+          gh pr create \
+            --title "Onboard connector: ${{ inputs.connector_name }}" \
+            --body "## New Connector Request
+
+          **Name:** ${{ inputs.connector_name }}
+          **Type:** ${{ inputs.connector_type }}
+          **Requested by:** ${{ inputs.requested_by }}
+
+          ### Files
+          - \`connectors/${{ inputs.connector_name }}/config.json\` — connector configuration
+          - \`connectors/${{ inputs.connector_name }}/secrets.enc.json\` — encrypted secrets (if applicable)
+
+          ### Review Checklist
+          - [ ] Verify connector configuration fields are correct
+          - [ ] Verify encrypted secrets file exists (if required for this type)
+          - [ ] Approve to complete onboarding" \
+            --base main \
+            --head "$BRANCH"
