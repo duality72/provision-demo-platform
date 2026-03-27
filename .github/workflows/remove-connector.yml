@@ -1,0 +1,64 @@
+name: Remove Connector
+
+on:
+  workflow_dispatch:
+    inputs:
+      connector_name:
+        description: 'Name of the connector to remove'
+        required: true
+        type: string
+      requested_by:
+        description: 'Email of the requesting user'
+        required: true
+        type: string
+      branch_name:
+        description: 'Branch name for the PR'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  remove:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Verify connector exists
+        run: |
+          if [ ! -d "connectors/${{ inputs.connector_name }}" ]; then
+            echo "::error::Connector directory connectors/${{ inputs.connector_name }} does not exist"
+            exit 1
+          fi
+
+      - name: Create branch and remove connector
+        run: |
+          git config user.name "provision-bot"
+          git config user.email "provision-bot@users.noreply.github.com"
+          git checkout -b "${{ inputs.branch_name }}"
+          git rm -r "connectors/${{ inputs.connector_name }}"
+          git commit -m "Remove connector: ${{ inputs.connector_name }}
+
+          Requested by: ${{ inputs.requested_by }}"
+          git push origin "${{ inputs.branch_name }}"
+
+      - name: Create Pull Request
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr create \
+            --title "Remove connector: ${{ inputs.connector_name }}" \
+            --body "## Connector Removal Request
+
+          **Name:** ${{ inputs.connector_name }}
+          **Requested by:** ${{ inputs.requested_by }}
+
+          ### Review Checklist
+          - [ ] Verify this connector should be removed
+          - [ ] Confirm no downstream dependencies on this connector
+          - [ ] Approve to complete removal" \
+            --base main \
+            --head "${{ inputs.branch_name }}"
