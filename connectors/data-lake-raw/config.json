@@ -1,0 +1,10 @@
+{
+  "connector_name": "data-lake-raw",
+  "connector_type": "s3",
+  "config": {
+    "bucket_name": "acme-data-lake-raw",
+    "region": "us-west-2"
+  },
+  "created_by": "system",
+  "created_at": "2026-03-27T20:26:47.039975+00:00"
+}
