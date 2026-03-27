@@ -1,0 +1,10 @@
+{
+  "connector_name": "analytics-export",
+  "connector_type": "s3",
+  "config": {
+    "bucket_name": "acme-analytics-export",
+    "region": "us-west-2"
+  },
+  "created_by": "system",
+  "created_at": "2026-03-27T17:59:48.059332+00:00"
+}
