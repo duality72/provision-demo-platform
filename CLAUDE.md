@@ -64,7 +64,7 @@ gh workflow run onboard-connector.yml \
   -f connector_name=test-direct \
   -f connector_type=s3 \
   -f encrypted_payload="$PAYLOAD" \
-  -f requested_by="test@dctank.com" \
+  -f requested_by="test@example.com" \
   -f branch_name="feat/onboard-test-direct-20260328-120000"
 ```
 
@@ -85,7 +85,7 @@ The remove workflow is simpler — no encryption needed, but the connector must 
 gh workflow run remove-connector.yml \
   --repo duality72/provision-demo-platform \
   -f connector_name=test-direct \
-  -f requested_by="test@dctank.com" \
+  -f requested_by="test@example.com" \
   -f branch_name="feat/remove-test-direct-20260328-120100"
 ```
 

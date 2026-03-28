@@ -6,3 +6,4 @@ terraform.tfvars
 __pycache__/
 *.pyc
 .env
+age-key.txt
