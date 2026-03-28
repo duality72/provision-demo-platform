@@ -44,13 +44,71 @@ Terraform discovers connectors via `fileset()` on `connectors/*/config.json`.
 
 ## Testing
 
-After any workflow change, test by submitting a connector through the live Provision Demo app and verifying:
-- The workflow runs successfully
-- Config files are generated correctly
-- The PR is created with the right branch name, title, and body
-- The provision-demo app's `/run-status` endpoint picks up the completed run and PR
+This repo should be testable independently of the provision-demo web app. Use `gh workflow run` to trigger workflows directly from the command line.
 
-For removal workflow changes, test by clicking "Remove" on an active connector in the app and verifying the PR deletes the correct directory.
+### Testing the onboard workflow
+
+The onboard workflow requires a real age-encrypted payload. To create one:
+
+```
+# Get the age public key from SSM
+AGE_PUB_KEY=$(aws ssm get-parameter --name /provision-demo/age-public-key --query 'Parameter.Value' --output text --region us-east-1)
+
+# Create and encrypt a test payload
+PAYLOAD=$(echo '{"connector_name":"test-direct","connector_type":"s3","config":{"bucket_name":"my-test-bucket","region":"us-east-1"},"secrets":{}}' \
+  | age -r "$AGE_PUB_KEY" | base64)
+
+# Trigger the workflow
+gh workflow run onboard-connector.yml \
+  --repo duality72/provision-demo-platform \
+  -f connector_name=test-direct \
+  -f connector_type=s3 \
+  -f encrypted_payload="$PAYLOAD" \
+  -f requested_by="test@dctank.com" \
+  -f branch_name="feat/onboard-test-direct-20260328-120000"
+```
+
+Prerequisites: `age` CLI installed locally and AWS credentials to read the SSM parameter.
+
+After the workflow completes, verify:
+- The PR was created with the correct branch name, title, and body
+- `connectors/test-direct/config.json` contains the expected configuration
+- `connectors/test-direct/secrets.enc.json` is SOPS-encrypted (if the type has secrets)
+
+Clean up: close the PR and delete the branch when done.
+
+### Testing the remove workflow
+
+The remove workflow is simpler — no encryption needed, but the connector must exist on main:
+
+```
+gh workflow run remove-connector.yml \
+  --repo duality72/provision-demo-platform \
+  -f connector_name=test-direct \
+  -f requested_by="test@dctank.com" \
+  -f branch_name="feat/remove-test-direct-20260328-120100"
+```
+
+If the connector directory doesn't exist on main, the workflow fails with "Connector directory does not exist" — this is expected and correct behavior.
+
+### Testing generate_connector.py locally
+
+```
+echo '{"connector_name":"test","connector_type":"s3","config":{"bucket_name":"b","region":"us-east-1"},"secrets":{}}' > /tmp/test-payload.json
+python .github/scripts/generate_connector.py --connector-type s3 --connector-name test --payload-file /tmp/test-payload.json
+ls connectors/test/
+```
+
+This requires `SOPS_KMS_ARN` env var and AWS credentials for SOPS encryption if the connector type has secrets.
+
+### Contract with provision-demo
+
+The provision-demo Lambda depends on this repo's outputs. If you change any of these, coordinate with the other repo:
+
+- **Workflow inputs**: The Lambda constructs these — adding/removing inputs requires changes in both repos
+- **PR body format**: The Lambda parses `**Type:**` and `**Requested by:**` lines from PR bodies. If you change the PR body template in the workflow, update `handle_connectors()` in dispatch.py
+- **Connector directory structure**: The Lambda's `/connectors` endpoint reads `connectors/{name}/config.json` from main. Changes to the directory layout require updating the Lambda
+- **Branch naming**: The Lambda generates timestamped branch names and the `/connectors` endpoint parses them to extract connector names
 
 ## GitHub Actions
 
