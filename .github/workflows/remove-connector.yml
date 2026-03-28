@@ -24,6 +24,19 @@ jobs:
   remove:
     runs-on: ubuntu-latest
     steps:
+      - name: Validate inputs
+        run: |
+          # Connector name: lowercase, numbers, hyphens, 2-63 chars
+          if ! echo "${{ inputs.connector_name }}" | grep -qE '^[a-z0-9][a-z0-9\-]{0,61}[a-z0-9]$'; then
+            echo "::error::Invalid connector_name: must be 2-63 characters, lowercase letters, numbers, and hyphens"
+            exit 1
+          fi
+          # Branch name: must start with feat/remove-
+          if ! echo "${{ inputs.branch_name }}" | grep -qE '^feat/remove-'; then
+            echo "::error::Invalid branch_name: must start with feat/remove-"
+            exit 1
+          fi
+
       - name: Checkout repository
         uses: actions/checkout@v6
 

@@ -33,8 +33,33 @@ jobs:
   onboard:
     runs-on: ubuntu-latest
     steps:
+      - name: Validate inputs
+        run: |
+          # Connector name: lowercase, numbers, hyphens, 2-63 chars
+          if ! echo "${{ inputs.connector_name }}" | grep -qE '^[a-z0-9][a-z0-9\-]{0,61}[a-z0-9]$'; then
+            echo "::error::Invalid connector_name: must be 2-63 characters, lowercase letters, numbers, and hyphens"
+            exit 1
+          fi
+          # Connector type: must be one of the known types
+          case "${{ inputs.connector_type }}" in
+            s3|postgres|rest-api|sftp) ;;
+            *) echo "::error::Invalid connector_type '${{ inputs.connector_type }}'. Must be one of: s3, postgres, rest-api, sftp"; exit 1 ;;
+          esac
+          # Branch name: must start with feat/onboard-
+          if ! echo "${{ inputs.branch_name }}" | grep -qE '^feat/onboard-'; then
+            echo "::error::Invalid branch_name: must start with feat/onboard-"
+            exit 1
+          fi
+
       - name: Checkout repository
         uses: actions/checkout@v6
+
+      - name: Verify connector does not already exist
+        run: |
+          if [ -d "connectors/${{ inputs.connector_name }}" ]; then
+            echo "::error::Connector 'connectors/${{ inputs.connector_name }}' already exists on main"
+            exit 1
+          fi
 
       - name: Install age
         run: |
