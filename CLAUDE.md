@@ -42,6 +42,14 @@ Each connector lives in `connectors/{connector-name}/`:
 
 Terraform discovers connectors via `fileset()` on `connectors/*/config.json`.
 
+## Monitor PRs for status checks and Copilot
+
+When creating PRs, always:
+1. Wait for CI status checks to pass: `gh pr checks <number> --watch`
+2. Check for Copilot code review comments: `gh api repos/duality72/provision-demo-platform/pulls/<number>/comments --jq '.[] | "[\(.user.login)] \(.path):\(.line) — \(.body[0:200])"'`
+3. Address any Copilot findings before merging
+4. Copilot is configured as an automatic reviewer on PRs to main
+
 ## Testing
 
 This repo should be testable independently of the provision-demo web app. Use `gh workflow run` to trigger workflows directly from the command line.

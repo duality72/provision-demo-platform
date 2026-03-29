@@ -110,11 +110,14 @@ def main():
     connector_dir = os.path.join("connectors", args.connector_name)
     os.makedirs(connector_dir, exist_ok=True)
 
+    # Coerce all config values to strings for Terraform compatibility
+    config = {k: str(v) for k, v in payload["config"].items()}
+
     # Write config.json
     config_data = {
         "connector_name": args.connector_name,
         "connector_type": args.connector_type,
-        "config": payload["config"],
+        "config": config,
         "created_by": payload.get("requested_by", payload.get("created_by", "system")),
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
