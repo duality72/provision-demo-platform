@@ -1,0 +1,10 @@
+{
+  "connector_name": "kasjhdf",
+  "connector_type": "s3",
+  "config": {
+    "bucket_name": "kasjdhf",
+    "region": "us-east-1"
+  },
+  "created_by": "system",
+  "created_at": "2026-03-29T18:54:46.428570+00:00"
+}
