@@ -1,0 +1,10 @@
+{
+  "connector_name": "jaf4",
+  "connector_type": "s3",
+  "config": {
+    "bucket_name": "jaft4",
+    "region": "ap-east-1"
+  },
+  "created_by": "system",
+  "created_at": "2026-03-29T18:05:11.884095+00:00"
+}
