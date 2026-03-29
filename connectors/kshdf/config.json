@@ -1,0 +1,10 @@
+{
+  "connector_name": "kshdf",
+  "connector_type": "s3",
+  "config": {
+    "bucket_name": "kahjsdf",
+    "region": "us-east-1"
+  },
+  "created_by": "system",
+  "created_at": "2026-03-29T18:38:06.474706+00:00"
+}
