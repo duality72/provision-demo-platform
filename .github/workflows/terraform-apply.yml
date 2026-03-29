@@ -7,6 +7,10 @@ on:
       - 'terraform/**'
       - 'connectors/**'
 
+concurrency:
+  group: terraform-apply
+  cancel-in-progress: false
+
 permissions:
   id-token: write
   contents: read
@@ -16,14 +20,14 @@ jobs:
     name: terraform-apply
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: aws-actions/configure-aws-credentials@v4
+      - uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: us-east-1
 
-      - uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v4
 
       - name: Terraform Init
         working-directory: terraform

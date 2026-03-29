@@ -17,14 +17,14 @@ jobs:
     name: terraform-plan
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: aws-actions/configure-aws-credentials@v4
+      - uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: us-east-1
 
-      - uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v4
 
       - name: Terraform Init
         working-directory: terraform
@@ -33,10 +33,12 @@ jobs:
       - name: Terraform Plan
         id: plan
         working-directory: terraform
-        run: terraform plan -var-file=ci.tfvars -no-color -out=plan.out 2>&1 | tee plan.txt
+        run: |
+          set -o pipefail
+          terraform plan -var-file=ci.tfvars -no-color -out=plan.out 2>&1 | tee plan.txt
 
       - name: Comment plan on PR
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: marocchino/sticky-pull-request-comment@v3
         with:
           header: terraform-plan
           message: |

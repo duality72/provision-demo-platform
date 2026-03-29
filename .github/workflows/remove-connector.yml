@@ -31,9 +31,9 @@ jobs:
             echo "::error::Invalid connector_name: must be 2-63 characters, lowercase letters, numbers, and hyphens"
             exit 1
           fi
-          # Branch name: must start with feat/remove-
-          if ! echo "${{ inputs.branch_name }}" | grep -qE '^feat/remove-'; then
-            echo "::error::Invalid branch_name: must start with feat/remove-"
+          # Branch name: must match feat/remove-{name}-{timestamp} pattern
+          if ! echo "${{ inputs.branch_name }}" | grep -qE '^feat/remove-[a-z0-9][a-z0-9\-]*-[0-9]{8}-[0-9]{6}$'; then
+            echo "::error::Invalid branch_name: must match feat/remove-{name}-YYYYMMDD-HHMMSS"
             exit 1
           fi
 
@@ -62,9 +62,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh pr create \
-            --title "Remove connector: ${{ inputs.connector_name }}" \
-            --body "## Connector Removal Request
+          cat > /tmp/pr-body.md << EOF
+          ## Connector Removal Request
 
           **Name:** ${{ inputs.connector_name }}
           **Requested by:** ${{ inputs.requested_by }}
@@ -72,6 +71,11 @@ jobs:
           ### Review Checklist
           - [ ] Verify this connector should be removed
           - [ ] Confirm no downstream dependencies on this connector
-          - [ ] Approve to complete removal" \
+          - [ ] Approve to complete removal
+          EOF
+          sed -i 's/^          //' /tmp/pr-body.md
+          gh pr create \
+            --title "Remove connector: ${{ inputs.connector_name }}" \
+            --body-file /tmp/pr-body.md \
             --base main \
             --head "${{ inputs.branch_name }}"
