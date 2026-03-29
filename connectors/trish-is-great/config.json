@@ -1,0 +1,10 @@
+{
+  "connector_name": "trish-is-great",
+  "connector_type": "s3",
+  "config": {
+    "bucket_name": "trish-is-great",
+    "region": "us-east-1"
+  },
+  "created_by": "system",
+  "created_at": "2026-03-29T18:07:53.070464+00:00"
+}
