@@ -1,0 +1,10 @@
+{
+  "connector_name": "jsadgfhas",
+  "connector_type": "sftp",
+  "config": {
+    "host": "sftp.excample.com",
+    "port": 22
+  },
+  "created_by": "system",
+  "created_at": "2026-03-29T19:22:38.874149+00:00"
+}
