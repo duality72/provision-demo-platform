@@ -36,7 +36,7 @@ jobs:
         run: terraform plan -var-file=ci.tfvars -no-color -out=plan.out 2>&1 | tee plan.txt
 
       - name: Comment plan on PR
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: marocchino/sticky-pull-request-comment@v3
         with:
           header: terraform-plan
           message: |
