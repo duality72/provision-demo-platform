@@ -1,0 +1,10 @@
+{
+  "connector_name": "e2e-smoke-20260608211315",
+  "connector_type": "s3",
+  "config": {
+    "bucket_name": "e2e-smoke-bucket-20260608",
+    "region": "us-east-1"
+  },
+  "created_by": "system",
+  "created_at": "2026-06-08T21:14:04.002015+00:00"
+}
