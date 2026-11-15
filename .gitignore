@@ -7,3 +7,6 @@ __pycache__/
 *.pyc
 .env
 age-key.txt
+
+# Claude Code per-user permissions; can hold typed tokens
+.claude/settings.local.json
