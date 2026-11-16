@@ -3,9 +3,6 @@ name: Terraform Plan
 on:
   pull_request:
     branches: [main]
-    paths:
-      - 'terraform/**'
-      - 'connectors/**'
 
 permissions:
   id-token: write
@@ -13,8 +10,39 @@ permissions:
   pull-requests: write
 
 jobs:
+  # Runs on every PR so the required `terraform-plan` check always reports.
+  # Only decides whether Terraform-relevant files changed; needs no AWS access.
+  changes:
+    name: changes
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    outputs:
+      tf: ${{ steps.filter.outputs.tf }}
+    steps:
+      - name: Detect Terraform-relevant changes
+        id: filter
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          tf=false
+          # previous_filename is included so a file moved out of these paths still counts.
+          files=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files" --paginate --jq '.[] | .filename, (.previous_filename // empty)')
+          while IFS= read -r f; do
+            case "$f" in
+              terraform/*|connectors/*) tf=true ;;
+            esac
+          done <<< "$files"
+          echo "tf=$tf" >> "$GITHUB_OUTPUT"
+
+  # Required status check. Skipped only when `changes` succeeded and found no
+  # Terraform paths; a skipped job reports as successful. If `changes` fails, the
+  # plan runs anyway, so a failed detection cannot pass the gate unplanned.
   terraform-plan:
     name: terraform-plan
+    needs: changes
+    if: ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.tf == 'true') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
