@@ -36,12 +36,13 @@ jobs:
           done <<< "$files"
           echo "tf=$tf" >> "$GITHUB_OUTPUT"
 
-  # Required status check. When `changes` finds no Terraform paths this job is
-  # skipped, and a skipped job reports as successful to required status checks.
+  # Required status check. Skipped only when `changes` succeeded and found no
+  # Terraform paths; a skipped job reports as successful. If `changes` fails, the
+  # plan runs anyway, so a failed detection cannot pass the gate unplanned.
   terraform-plan:
     name: terraform-plan
     needs: changes
-    if: needs.changes.outputs.tf == 'true'
+    if: ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.tf == 'true') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
